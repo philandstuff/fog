@@ -22,10 +22,10 @@ module Fog
         end
         
         def validate_uris(options ={})
-          [:vdc_uri, :network_uri].each do |opt_uri|
-            result = default_organization_body[:Link].detect {|org| org[:href] == options[opt_uri]}
-            raise("#{opt_uri}: #{options[opt_uri]} not found") unless result
-          end
+          #[:vdc_uri, :network_uri].each do |opt_uri|
+          #  result = default_organization_body[:Link].detect {|org| org[:href] == options[opt_uri]}
+          #  raise("#{opt_uri}: #{options[opt_uri]} not found") unless result
+          #end
         end
         
         def populate_uris(options = {})
