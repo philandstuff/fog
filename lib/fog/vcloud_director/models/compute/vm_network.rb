@@ -19,6 +19,7 @@ module Fog
         attribute :is_connected
         attribute :mac_address
         attribute :ip_address_allocation_mode
+        attribute :ip_address
         
         def save
           response = service.put_vm_network(id, attributes)
