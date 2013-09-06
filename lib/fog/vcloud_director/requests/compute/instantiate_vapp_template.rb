@@ -2,15 +2,15 @@ module Fog
   module Compute
     class VcloudDirector
       class Real
-        
+
         #TODO move all the logic to a generator
-        
+
         def instantiate_vapp_template(vapp_name, template_id, options = {})
           params = populate_uris(options.merge(:vapp_name => vapp_name, :template_id => template_id))
           validate_uris(params)
-          
+
           data = generate_instantiate_vapp_template_request(params)
-          
+
           request(
             :body => data,
             :expects => 201,
@@ -20,19 +20,23 @@ module Fog
             :path => "vdc/#{params[:vdc_id]}/action/instantiateVAppTemplate"
           )
         end
-        
+
         def validate_uris(options ={})
+          # Not entirely sure what this is trying to achieve; it's broken in
+          # face of multiple Orgs anyway.
           #[:vdc_uri, :network_uri].each do |opt_uri|
           #  result = default_organization_body[:Link].detect {|org| org[:href] == options[opt_uri]}
           #  raise("#{opt_uri}: #{options[opt_uri]} not found") unless result
           #end
         end
-        
+
         def populate_uris(options = {})
           options[:vdc_id] ||= default_vdc_id
-          options[:vdc_uri] =  vdc_end_point(options[:vdc_id])
+          options[:vdc_uri] = vdc_end_point(options[:vdc_id])
           options[:network_id] ||= default_network_id
-          options[:network_uri] = network_end_point(options[:network_id])
+          options[:network_id] = Array(options[:network_id])
+          options[:network_uri] = options[:network_id].map {|network_id| network_end_point(network_id)}
+          options[:network_uri] = Array(options[:network_uri])
           #options[:network_name] = default_network_name || raise("error retrieving network name")
           options[:template_uri] = vapp_template_end_point(options[:template_id]) || raise(":template_id option is required")
           #customization_options = get_vapp_template(options[:template_uri]).body[:Children][:Vm][:GuestCustomizationSection]
@@ -47,22 +51,25 @@ module Fog
           #end
           options
         end
-        
+
         def generate_instantiate_vapp_template_request(options ={})
           xml = Builder::XmlMarkup.new
           xml.InstantiateVAppTemplateParams(xmlns.merge!(:name => options[:vapp_name], :"xml:lang" => "en")) {
             xml.Description(options[:description])
             xml.InstantiationParams {
               # This options are fully ignored
-              if options[:network_uri]
+              unless options[:network_uri].empty?
                 xml.NetworkConfigSection {
                   xml.tag!("ovf:Info"){ "Configuration parameters for logical networks" }
-                   xml.NetworkConfig("networkName" => options[:network_name]) {
+                  options[:network_id].each do |network_id|
+                    network = get_network(network_id).body
+                    xml.NetworkConfig("networkName" => network[:name]) {
                       xml.Configuration {
-                        xml.ParentNetwork(:href => options[:network_uri])
+                        xml.ParentNetwork(:href => network[:href])
                         xml.FenceMode("bridged")
+                      }
                     }
-                  }
+                  end
                 }
               end
             }
@@ -71,16 +78,15 @@ module Fog
             xml.AllEULAsAccepted("true")
           }
         end
-        
-        
+
         def xmlns
             { 'xmlns' => "http://www.vmware.com/vcloud/v1.5",
               "xmlns:ovf" => "http://schemas.dmtf.org/ovf/envelope/1",
               "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
-              "xmlns:xsd" => "http://www.w3.org/2001/XMLSchema" 
+              "xmlns:xsd" => "http://www.w3.org/2001/XMLSchema"
             }
         end
-        
+
 #        def validate_instantiate_vapp_template_options options
 #          # :network_uri removed, if not specified will use template network config.
 #          valid_opts = [:catalog_item_uri, :name, :vdc_uri]

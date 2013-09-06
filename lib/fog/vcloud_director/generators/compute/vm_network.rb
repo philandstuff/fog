@@ -35,13 +35,13 @@ module Fog
       module VcloudDirector
 
         class VmNetwork
-           
+
           attr_reader :attrs
-          
+
           def initialize(attrs={})
             @attrs = attrs
           end
-          
+
           def generate_xml
             output = ""
             output << header
@@ -49,72 +49,75 @@ module Fog
             output << tail
             output
           end
-          
+
           def network
             @attrs[:network]
           end
-          
+
           def network=(new_network_name)
             @attrs[:network] = new_network_name
           end
-          
+
           def ip_address
             @attrs[:ip_address]
           end
-          
+
           def ip_address=(new_ip_address)
             @attrs[:ip_address] = new_ip_address
           end
-          
+
           def is_connected
             @attrs[:is_connected]
           end
-          
+
           def is_connected=(new_is_connected)
             @attrs[:is_connected] = new_is_connected
           end
-          
+
           def ip_address_allocation_mode
             @attrs[:ip_address_allocation_mode]
           end
-          
+
           def ip_address_allocation_mode=(new_ip_address_allocation_mode)
             @attrs[:ip_address_allocation_mode] = new_ip_address_allocation_mode
           end
-          
+
           def header
-              '<NetworkConnectionSection xmlns="http://www.vmware.com/vcloud/v1.5" 
-                 xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1" 
-                 type="application/vnd.vmware.vcloud.networkConnectionSection+xml" 
-                 ovf:required="false" 
-                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-                   xsi:schemaLocation="http://schemas.dmtf.org/ovf/envelope/1 
-                   http://schemas.dmtf.org/ovf/envelope/1/dsp8023_1.1.0.xsd 
-                   http://www.vmware.com/vcloud/v1.5 http://10.194.1.65/api/v1.5/schema/master.xsd">'
-              
+            '<NetworkConnectionSection xmlns="http://www.vmware.com/vcloud/v1.5" 
+               xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1" 
+               type="application/vnd.vmware.vcloud.networkConnectionSection+xml" 
+               ovf:required="false" 
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                 xsi:schemaLocation="http://schemas.dmtf.org/ovf/envelope/1 
+                 http://schemas.dmtf.org/ovf/envelope/1/dsp8023_1.1.0.xsd 
+                 http://www.vmware.com/vcloud/v1.5 http://10.194.1.65/api/v1.5/schema/master.xsd">'
           end
-          
-          
+
           def body(opts={})
-            body = <<EOF
-            <ovf:Info>#{opts[:info]}</ovf:Info>
-                 <PrimaryNetworkConnectionIndex>#{opts[:primary_network_connection_index]}</PrimaryNetworkConnectionIndex>
-                 <NetworkConnection 
-                     network="#{opts[:network]}" 
-                     needsCustomization="#{opts[:needs_customization]}">
-                     <NetworkConnectionIndex>#{opts[:network_connection_index]}</NetworkConnectionIndex>
-                     <IpAddress>#{opts[:ip_address]}</IpAddress>
-                     <IsConnected>#{opts[:is_connected]}</IsConnected>
-                     <MACAddress>#{opts[:mac_address]}</MACAddress>
-                     <IpAddressAllocationMode>#{opts[:ip_address_allocation_mode]}</IpAddressAllocationMode>
-                 </NetworkConnection>
-EOF
+            body = <<-EOF
+              <ovf:Info>#{opts[:info]}</ovf:Info>
+              <PrimaryNetworkConnectionIndex>#{opts[:primary_network_connection_index]}</PrimaryNetworkConnectionIndex>
+            EOF
+            opts[:network_connections].each do |network_connection|
+              body += <<-EOF
+                <NetworkConnection 
+                  network="#{network_connection[:network]}" 
+                  needsCustomization="#{network_connection[:needs_customization]}">
+                  <NetworkConnectionIndex>#{network_connection[:network_connection_index]}</NetworkConnectionIndex>
+                  <IpAddress>#{network_connection[:ip_address]}</IpAddress>
+                  <IsConnected>#{network_connection[:is_connected]}</IsConnected>
+                  <MACAddress>#{network_connection[:mac_address]}</MACAddress>
+                  <IpAddressAllocationMode>#{network_connection[:ip_address_allocation_mode]}</IpAddressAllocationMode>
+                </NetworkConnection>
+              EOF
+            end
+            body
           end
-          
+
           def tail
             '</NetworkConnectionSection>'
           end
-          
+
         end
       end
     end
